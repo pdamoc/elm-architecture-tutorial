@@ -1,11 +1,8 @@
+import Html.App as Html
 
 import CounterList exposing (init, update, view)
-import StartApp.Simple exposing (start)
 
-
+main : Program Never
 main =
-  start
-    { model = init
-    , update = update
-    , view = view
-    }
+  Html.beginnerProgram
+    { model = init, update = update, view = view}

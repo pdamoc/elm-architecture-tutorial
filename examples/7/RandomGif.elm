@@ -1,6 +1,5 @@
-module RandomGif where
+module RandomGif exposing (..)
 
-import Effects exposing (Effects, Never)
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
@@ -17,7 +16,7 @@ type alias Model =
     }
 
 
-init : String -> (Model, Effects Action)
+init : String -> (Model, Cmd Msg)
 init topic =
   ( Model topic "assets/waiting.gif"
   , getRandomGif topic
@@ -26,38 +25,39 @@ init topic =
 
 -- UPDATE
 
-type Action
-    = RequestMore
-    | NewGif (Maybe String)
+type Msg
+  = MorePlease
+  | FetchSucceed String
+  | FetchFail
 
 
-update : Action -> Model -> (Model, Effects Action)
-update action model =
-  case action of
-    RequestMore ->
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+  case msg of
+    MorePlease ->
       (model, getRandomGif model.topic)
 
-    NewGif maybeUrl ->
-      ( Model model.topic (Maybe.withDefault model.gifUrl maybeUrl)
-      , Effects.none
-      )
+    FetchSucceed newUrl ->
+      (Model model.topic newUrl, Cmd.none)
 
+    FetchFail ->
+      (model, Cmd.none)
 
 -- VIEW
 
 (=>) = (,)
 
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   div [ style [ "width" => "200px" ] ]
     [ h2 [headerStyle] [text model.topic]
     , div [imgStyle model.gifUrl] []
-    , button [ onClick address RequestMore ] [ text "More Please!" ]
+    , button [ onClick MorePlease ] [ text "More Please!" ]
     ]
 
 
-headerStyle : Attribute
+headerStyle : Attribute Msg
 headerStyle =
   style
     [ "width" => "200px"
@@ -65,7 +65,7 @@ headerStyle =
     ]
 
 
-imgStyle : String -> Attribute
+imgStyle : String -> Attribute Msg
 imgStyle url =
   style
     [ "display" => "inline-block"
@@ -79,22 +79,15 @@ imgStyle url =
 
 -- EFFECTS
 
-getRandomGif : String -> Effects Action
+getRandomGif : String -> Cmd Msg
 getRandomGif topic =
-  Http.get decodeUrl (randomUrl topic)
-    |> Task.toMaybe
-    |> Task.map NewGif
-    |> Effects.task
+  let
+    url =
+      "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" ++ topic
+  in
+    Http.get decodeGifUrl url
+    |> Task.perform (\_ -> FetchFail) FetchSucceed
 
-
-randomUrl : String -> String
-randomUrl topic =
-  Http.url "http://api.giphy.com/v1/gifs/random"
-    [ "api_key" => "dc6zaTOxFJmzC"
-    , "tag" => topic
-    ]
-
-
-decodeUrl : Json.Decoder String
-decodeUrl =
+decodeGifUrl : Json.Decoder String
+decodeGifUrl =
   Json.at ["data", "image_url"] Json.string

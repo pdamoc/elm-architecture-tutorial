@@ -1,27 +1,25 @@
-module Counter (Model, init, Action, update, view, viewWithRemoveButton, Context) where
+module Counter exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (..)
+import Html.App as H
+import Html.Attributes exposing (style)
+import Html.Events exposing (onClick)
 
 
 -- MODEL
 
 type alias Model = Int
 
-
-init : Int -> Model
-init count = count
-
+init : Int -> Model 
+init v = v
 
 -- UPDATE
 
-type Action = Increment | Decrement
+type Msg = Increment | Decrement
 
-
-update : Action -> Model -> Model
-update action model =
-  case action of
+update : Msg -> Model -> Model
+update msg model =
+  case msg of
     Increment ->
       model + 1
 
@@ -31,33 +29,16 @@ update action model =
 
 -- VIEW
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   div []
-    [ button [ onClick address Decrement ] [ text "-" ]
+    [ button [ onClick Decrement ] [ text "-" ]
     , div [ countStyle ] [ text (toString model) ]
-    , button [ onClick address Increment ] [ text "+" ]
+    , button [ onClick Increment ] [ text "+" ]
     ]
 
 
-type alias Context =
-    { actions : Signal.Address Action
-    , remove : Signal.Address ()
-    }
-
-
-viewWithRemoveButton : Context -> Model -> Html
-viewWithRemoveButton context model =
-  div []
-    [ button [ onClick context.actions Decrement ] [ text "-" ]
-    , div [ countStyle ] [ text (toString model) ]
-    , button [ onClick context.actions Increment ] [ text "+" ]
-    , div [ countStyle ] []
-    , button [ onClick context.remove () ] [ text "X" ]
-    ]
-
-
-countStyle : Attribute
+countStyle : Attribute msg
 countStyle =
   style
     [ ("font-size", "20px")
@@ -66,3 +47,15 @@ countStyle =
     , ("width", "50px")
     , ("text-align", "center")
     ]
+
+viewWithRemoveButton : (Msg -> pMsg) -> pMsg -> Model -> Html pMsg
+viewWithRemoveButton toParent removeMsg model =
+  div []
+    [ H.map toParent <| button [ onClick Decrement ] [ text "-" ]
+    , div [ countStyle ] [ text (toString model) ]
+    , H.map toParent <| button [ onClick Increment ] [ text "+" ]
+    , div [ countStyle ] []
+    , button [ onClick removeMsg ] [ text "X" ]
+    ]
+
+

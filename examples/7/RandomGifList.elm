@@ -1,6 +1,6 @@
-module RandomGifList where
+module RandomGifList exposing (..)
 
-import Effects exposing (Effects, map, batch, Never)
+import Html.App as H
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -18,27 +18,27 @@ type alias Model =
     }
 
 
-init : (Model, Effects Action)
+init : (Model, Cmd Msg)
 init =
     ( Model "" [] 0
-    , Effects.none
+    , Cmd.none
     )
 
 
 -- UPDATE
 
-type Action
+type Msg
     = Topic String
     | Create
-    | SubMsg Int RandomGif.Action
+    | SubMsg Int RandomGif.Msg
 
 
-update : Action -> Model -> (Model, Effects Action)
+update : Msg -> Model -> (Model, Cmd Msg)
 update message model =
     case message of
         Topic topic ->
             ( { model | topic = topic }
-            , Effects.none
+            , Cmd.none
             )
 
         Create ->
@@ -50,7 +50,7 @@ update message model =
                     Model "" (model.gifList ++ [(model.uid, newRandomGif)]) (model.uid + 1)
             in
                 ( newModel
-                , map (SubMsg model.uid) fx
+                , Cmd.map (SubMsg model.uid) fx
                 )
 
         SubMsg msgId msg ->
@@ -61,10 +61,10 @@ update message model =
                             (newRandomGif, fx) = RandomGif.update msg randomGif
                         in
                             ( (id, newRandomGif)
-                            , map (SubMsg id) fx
+                            , Cmd.map (SubMsg id) fx
                             )
                     else
-                        (entry, Effects.none)
+                        (entry, Cmd.none)
 
                 (newGifList, fxList) =
                     model.gifList
@@ -72,7 +72,7 @@ update message model =
                         |> List.unzip
             in
                 ( { model | gifList = newGifList }
-                , batch fxList
+                , Cmd.batch fxList
                 )
 
 
@@ -81,28 +81,28 @@ update message model =
 (=>) = (,)
 
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
     div []
         [ input
             [ placeholder "What kind of gifs do you want?"
             , value model.topic
-            , onEnter address Create
-            , on "input" targetValue (Signal.message address << Topic)
+            , onEnter model.topic
+            , on "input" (Json.map Topic targetValue) 
             , inputStyle
             ]
             []
         , div [ style [ "display" => "flex", "flex-wrap" => "wrap" ] ]
-            (List.map (elementView address) model.gifList)
+            (List.map elementView model.gifList)
         ]
 
 
-elementView : Signal.Address Action -> (Int, RandomGif.Model) -> Html
-elementView address (id, model) =
-    RandomGif.view (Signal.forwardTo address (SubMsg id)) model
+elementView : (Int, RandomGif.Model) -> Html Msg
+elementView (id, model) =
+    H.map (SubMsg id) <| RandomGif.view model
 
 
-inputStyle : Attribute
+inputStyle : Attribute Msg
 inputStyle =
     style
         [ ("width", "100%")
@@ -113,17 +113,12 @@ inputStyle =
         ]
 
 
-onEnter : Signal.Address a -> a -> Attribute
-onEnter address value =
-    on "keydown"
-        (Json.customDecoder keyCode is13)
-        (\_ -> Signal.message address value)
-
-
-is13 : Int -> Result String ()
-is13 code =
-    if code == 13 then
-        Ok ()
-
-    else
-        Err "not the right key code"
+onEnter : String -> Attribute Msg
+onEnter topic = 
+  let 
+    createOnEnter code = 
+      if code == 13 then 
+        Create
+      else (Topic topic)
+  in 
+      on "keydown" (Json.map createOnEnter keyCode)

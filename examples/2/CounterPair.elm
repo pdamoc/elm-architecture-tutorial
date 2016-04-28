@@ -1,8 +1,8 @@
-module CounterPair where
+module CounterPair exposing (..)
 
 import Counter
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.App
 import Html.Events exposing (..)
 
 
@@ -23,15 +23,15 @@ init top bottom =
 
 -- UPDATE
 
-type Action
+type Msg
     = Reset
-    | Top Counter.Action
-    | Bottom Counter.Action
+    | Top Counter.Msg
+    | Bottom Counter.Msg
 
 
-update : Action -> Model -> Model
-update action model =
-  case action of
+update : Msg -> Model -> Model
+update msg model =
+  case msg of
     Reset -> init 0 0
 
     Top act ->
@@ -47,10 +47,10 @@ update action model =
 
 -- VIEW
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   div []
-    [ Counter.view (Signal.forwardTo address Top) model.topCounter
-    , Counter.view (Signal.forwardTo address Bottom) model.bottomCounter
-    , button [ onClick address Reset ] [ text "RESET" ]
+    [ Html.App.map Top <| Counter.view model.topCounter
+    , Html.App.map Bottom <| Counter.view model.bottomCounter
+    , button [ onClick Reset ] [ text "RESET" ]
     ]

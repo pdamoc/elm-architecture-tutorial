@@ -1,8 +1,7 @@
-module CounterList where
+module CounterList exposing (..)
 
 import Counter
 import Html exposing (..)
-import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 
 
@@ -25,15 +24,15 @@ init =
 
 -- UPDATE
 
-type Action
+type Msg
     = Insert
     | Remove ID
-    | Modify ID Counter.Action
+    | Modify ID Counter.Msg
 
 
-update : Action -> Model -> Model
-update action model =
-  case action of
+update : Msg -> Model -> Model
+update msg model =
+  case msg of
     Insert ->
       { model |
           counters = ( model.nextID, Counter.init 0 ) :: model.counters,
@@ -45,10 +44,10 @@ update action model =
           counters = List.filter (\(counterID, _) -> counterID /= id) model.counters
       }
 
-    Modify id counterAction ->
+    Modify id counterMsg ->
       let updateCounter (counterID, counterModel) =
               if counterID == id then
-                  (counterID, Counter.update counterAction counterModel)
+                  (counterID, Counter.update counterMsg counterModel)
               else
                 (counterID, counterModel)
       in
@@ -57,18 +56,13 @@ update action model =
 
 -- VIEW
 
-view : Signal.Address Action -> Model -> Html
-view address model =
-  let insert = button [ onClick address Insert ] [ text "Add" ]
+view : Model -> Html Msg
+view model =
+  let insert = button [ onClick Insert ] [ text "Add" ]
   in
-      div [] (insert :: List.map (viewCounter address) model.counters)
+      div [] (insert :: List.map viewCounter model.counters)
 
 
-viewCounter : Signal.Address Action -> (ID, Counter.Model) -> Html
-viewCounter address (id, model) =
-  let context =
-        Counter.Context
-          (Signal.forwardTo address (Modify id))
-          (Signal.forwardTo address (always (Remove id)))
-  in
-      Counter.viewWithRemoveButton context model
+viewCounter : (ID, Counter.Model) -> Html Msg
+viewCounter (id, model) =
+  Counter.viewWithRemoveButton (Modify id) (Remove id) model
