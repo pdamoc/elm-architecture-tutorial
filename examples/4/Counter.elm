@@ -1,4 +1,4 @@
-module Counter exposing (Model, Msg(Remove), init, update, view, viewWithRemoveButton)
+module Counter exposing (Model, Msg, Dispatch(Remove), init, update, view, viewWithRemoveButton)
 
 import Html exposing (..)
 import Html.Attributes exposing (style)
@@ -14,39 +14,39 @@ init v = v
 
 -- UPDATE
 
-type LocalMsg = Increment | Decrement
+type Dispatch = Remove
 
-type Msg = Local LocalMsg | Remove
+type Msg = Increment | Decrement | RemoveSelf
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Maybe Dispatch)
 update msg model =
   case msg of
-    Local Increment ->
-      model + 1
+    Increment ->
+      (model + 1, Nothing) 
 
-    Local Decrement ->
-      model - 1
+    Decrement ->
+      (model - 1, Nothing) 
 
-    Remove -> 
-      model
+    RemoveSelf -> 
+      (model, Just Remove)
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   div []
-    [ button [ onClick (Local Decrement) ] [ text "-" ]
+    [ button [ onClick Decrement ] [ text "-" ]
     , div [ countStyle ] [ text (toString model) ]
-    , button [ onClick (Local Increment) ] [ text "+" ]
+    , button [ onClick Increment ] [ text "+" ]
     ]
 
 viewWithRemoveButton : Model -> Html Msg
 viewWithRemoveButton model =
   div []
-    [ button [ onClick (Local Decrement) ] [ text "-" ]
+    [ button [ onClick Decrement ] [ text "-" ]
     , span [ countStyle ] [ text (toString model) ]
-    , button [ onClick (Local Increment) ] [ text "+" ]
-    , button [ onClick Remove ] [ text "X" ]
+    , button [ onClick Increment ] [ text "+" ]
+    , button [ onClick RemoveSelf ] [ text "X" ]
     ]
 
 

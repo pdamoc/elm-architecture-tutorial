@@ -46,16 +46,23 @@ update msg model =
       }
 
     Modify id counterMsg ->
-      case counterMsg of
-        Counter.Remove -> update (Remove id) model
-        _ -> 
-          let updateCounter (counterID, counterModel) =
-                  if counterID == id then
-                      (counterID, Counter.update counterMsg counterModel)
-                  else
-                    (counterID, counterModel)
-          in
-              { model | counters = List.map updateCounter model.counters }
+      let 
+        updateCounter (counterID, counterModel) (acc, prevMsg) =
+          if counterID == id then
+              let 
+                (newCounterModel, dispatch) = Counter.update counterMsg counterModel
+              in 
+                (acc ++ [(counterID, newCounterModel)], dispatch)
+          else
+              (acc ++ [(counterID, counterModel)], prevMsg)
+
+        (newCounters, todo) = List.foldl updateCounter ([], Nothing) model.counters
+      in
+        case todo of 
+          Nothing ->  
+            { model | counters = newCounters }
+          Just Counter.Remove ->
+            update (Remove id) { model | counters = newCounters }
 
 
 -- VIEW
