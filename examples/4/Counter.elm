@@ -1,4 +1,4 @@
-module Counter exposing (..)
+module Counter exposing (Model, Msg(Remove), init, update, view, viewWithRemoveButton)
 
 import Html exposing (..)
 import Html.Attributes exposing (style)
