@@ -1,9 +1,7 @@
-module SpinSquare (Model, Action, init, update, view) where
+module SpinSquare exposing (Model, Msg(Tick), init, update, view) 
 
 import Easing exposing (ease, easeOutBounce, float)
-import Effects exposing (Effects)
-import Html exposing (Html)
-import Svg exposing (svg, rect, g, text, text')
+import Svg exposing (Svg, svg, rect, g, text, text')
 import Svg.Attributes exposing (..)
 import Svg.Events exposing (onClick)
 import Time exposing (Time, second)
@@ -13,20 +11,17 @@ import Time exposing (Time, second)
 
 type alias Model =
     { angle : Float
-    , animationState : AnimationState
+    , prevClockTime : Time
+    , elapsedTime : Maybe Time
     }
 
 
-type alias AnimationState =
-    Maybe { prevClockTime : Time, elapsedTime : Time }
-
-
-init : (Model, Effects Action)
+init : Model
 init =
-  ( { angle = 0, animationState = Nothing }
-  , Effects.none
-  )
-
+  { angle = 0
+  , prevClockTime = 0
+  , elapsedTime = Nothing }
+  
 
 rotateStep = 90
 duration = second
@@ -34,68 +29,66 @@ duration = second
 
 -- UPDATE
 
-type Action
+type Msg
     = Spin
     | Tick Time
 
 
-update : Action -> Model -> (Model, Effects Action)
+update : Msg -> Model -> Model
 update msg model =
   case msg of
     Spin ->
-      case model.animationState of
+      case model.elapsedTime of
         Nothing ->
-          ( model, Effects.tick Tick )
-
-        Just _ ->
-          ( model, Effects.none )
+          { model | elapsedTime = Just -1 } 
+        _ -> 
+          model 
 
     Tick clockTime ->
-      let
-        newElapsedTime =
-          case model.animationState of
-            Nothing ->
-              0
-
-            Just {elapsedTime, prevClockTime} ->
-              elapsedTime + (clockTime - prevClockTime)
-      in
-        if newElapsedTime > duration then
-          ( { angle = model.angle + rotateStep
-            , animationState = Nothing
-            }
-          , Effects.none
-          )
-        else
-          ( { angle = model.angle
-            , animationState = Just { elapsedTime = newElapsedTime, prevClockTime = clockTime }
-            }
-          , Effects.tick Tick
-          )
+      case model.elapsedTime of 
+        Nothing -> 
+          model 
+        Just -1 -> 
+          {model | prevClockTime = clockTime, elapsedTime = Just 0}
+        _ -> 
+          let 
+            newElapsedTime = clockTime-model.prevClockTime
+          in 
+            if newElapsedTime > duration then
+              { model |
+                angle = model.angle + rotateStep
+              , elapsedTime = Nothing
+              } 
+            else
+              { model |
+                angle = model.angle
+              , elapsedTime = Just newElapsedTime
+              } 
 
 
 -- VIEW
 
-toOffset : AnimationState -> Float
-toOffset animationState =
-  case animationState of
+toOffset : Maybe Float -> Float
+toOffset elapsedTime =
+  case elapsedTime of
     Nothing ->
       0
+    Just -1 -> 
+      0
+    Just t ->
+      ease easeOutBounce float 0 rotateStep duration t
 
-    Just {elapsedTime} ->
-      ease easeOutBounce float 0 rotateStep duration elapsedTime
 
-
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Svg Msg
+view model =
   let
     angle =
-      model.angle + toOffset model.animationState
+      model.angle + toOffset model.elapsedTime
   in
     svg
       [ width "200", height "200", viewBox "0 0 200 200" ]
       [ g [ transform ("translate(100, 100) rotate(" ++ toString angle ++ ")")
-          , onClick (Signal.message address Spin)
+          , onClick Spin
           ]
           [ rect
               [ x "-50"

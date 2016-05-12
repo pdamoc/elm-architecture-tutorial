@@ -1,9 +1,10 @@
-module SpinSquarePair where
+module SpinSquarePair exposing (..)
 
-import Effects exposing (Effects)
 import Html exposing (..)
+import Html.App exposing (map)
 import Html.Attributes exposing (..)
-import SpinSquare
+import SpinSquare 
+import Time exposing (Time)
 
 
 -- MODEL
@@ -14,56 +15,43 @@ type alias Model =
     }
 
 
-init : (Model, Effects Action)
+init : Model
 init =
-  let
-    (left, leftFx) = SpinSquare.init
-    (right, rightFx) = SpinSquare.init
-  in
-    ( Model left right
-    , Effects.batch
-        [ Effects.map Left leftFx
-        , Effects.map Right rightFx
-        ]
-    )
-
+  Model SpinSquare.init SpinSquare.init
 
 -- UPDATE
 
-type Action
-    = Left SpinSquare.Action
-    | Right SpinSquare.Action
+type Msg
+    = Left SpinSquare.Msg
+    | Right SpinSquare.Msg
+    | Tick Time
 
 
-update : Action -> Model -> (Model, Effects Action)
+update : Msg -> Model -> Model
 update action model =
   case action of
     Left act ->
-      let
-        (left, fx) = SpinSquare.update act model.left
-      in
-        ( Model left model.right
-        , Effects.map Left fx
-        )
-
+      Model (SpinSquare.update act model.left) model.right
+      
     Right act ->
-      let
-        (right, fx) = SpinSquare.update act model.right
-      in
-        ( Model model.left right
-        , Effects.map Right fx
-        )
-
-
+      Model model.left (SpinSquare.update act model.right)
+    
+    Tick time -> 
+      let 
+        --t = Debug.log "time:" time
+        left = SpinSquare.update (SpinSquare.Tick time) model.left
+        right = SpinSquare.update (SpinSquare.Tick time) model.right
+      in 
+        (Model left right) 
 
 -- VIEW
 
 (=>) = (,)
 
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   div [ style [ "display" => "flex" ] ]
-    [ SpinSquare.view (Signal.forwardTo address Left) model.left
-    , SpinSquare.view (Signal.forwardTo address Right) model.right
+    [ map Left <| SpinSquare.view model.left
+    , map Right <| SpinSquare.view model.right
     ]

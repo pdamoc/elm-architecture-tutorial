@@ -1,25 +1,14 @@
-
-import Effects exposing (Never)
-import SpinSquarePair exposing (init, update, view)
-import StartApp
-import Task
-
-
-app =
-  StartApp.start
-    { init = init
-    , update = update
-    , view = view
-    , inputs = []
-    }
+import SpinSquarePair exposing (init, update, view, Msg(Tick))
+import AnimationFrame
+import Html.App as App
 
 
 main =
-  app.html
-
-
-port tasks : Signal (Task.Task Never ())
-port tasks =
-  app.tasks
+  App.program
+    { init = init ! []
+    , update = \msg model -> update msg model ! []
+    , view = view
+    , subscriptions = (\_ -> AnimationFrame.times Tick)
+    }
 
 
