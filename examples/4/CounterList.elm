@@ -27,7 +27,6 @@ init =
 
 type Msg
     = Insert
-    | Remove ID
     | Modify ID Counter.Msg
 
 
@@ -40,29 +39,18 @@ update msg model =
           nextID = model.nextID + 1
       }
 
-    Remove id ->
-      { model |
-          counters = List.filter (\(counterID, _) -> counterID /= id) model.counters
-      }
-
     Modify id counterMsg ->
       let 
-        updateCounter (counterID, counterModel) (acc, prevMsg) =
-          if counterID == id then
-              let 
-                (newCounterModel, dispatch) = Counter.update counterMsg counterModel
-              in 
-                (acc ++ [(counterID, newCounterModel)], dispatch)
-          else
-              (acc ++ [(counterID, counterModel)], prevMsg)
-
-        (newCounters, todo) = List.foldl updateCounter ([], Nothing) model.counters
+        updateCounter (counterID, counterModel) =
+          case (counterID == id, Counter.update counterMsg counterModel) of
+            (False, _) -> 
+              Just (counterID, counterModel)
+            (True, (newCounterModel, Just Counter.Remove)) -> 
+              Nothing
+            (True, (newCounterModel, _)) -> 
+              Just (counterID, newCounterModel)
       in
-        case todo of 
-          Nothing ->  
-            { model | counters = newCounters }
-          Just Counter.Remove ->
-            update (Remove id) { model | counters = newCounters }
+        { model | counters = List.filterMap updateCounter model.counters }
 
 
 -- VIEW
