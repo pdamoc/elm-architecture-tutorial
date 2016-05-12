@@ -44,11 +44,11 @@ update msg model =
         updateCounter (counterID, counterModel) =
           case (counterID == id, Counter.update counterMsg counterModel) of
             (False, _) -> 
-              Just (counterID, counterModel)
+              Just (counterID, counterModel) -- not the current counter
             (True, (newCounterModel, Just Counter.Remove)) -> 
-              Nothing
+              Nothing -- current counter +  Remove; should no longer be in the list
             (True, (newCounterModel, _)) -> 
-              Just (counterID, newCounterModel)
+              Just (counterID, newCounterModel) -- current counter; other actions
       in
         { model | counters = List.filterMap updateCounter model.counters }
 

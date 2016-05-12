@@ -28,7 +28,7 @@ update msg model =
       (model - 1, Nothing) 
 
     RemoveSelf -> 
-      (model, Just Remove)
+      (model, Just Remove) -- inform the parent that it should remove the counter
 
 -- VIEW
 
