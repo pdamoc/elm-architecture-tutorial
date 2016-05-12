@@ -1,7 +1,6 @@
 module Counter exposing (..)
 
 import Html exposing (..)
-import Html.App as H
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 
@@ -15,26 +14,39 @@ init v = v
 
 -- UPDATE
 
-type Msg = Increment | Decrement
+type LocalMsg = Increment | Decrement
+
+type Msg = Local LocalMsg | Remove
 
 update : Msg -> Model -> Model
 update msg model =
   case msg of
-    Increment ->
+    Local Increment ->
       model + 1
 
-    Decrement ->
+    Local Decrement ->
       model - 1
 
+    Remove -> 
+      model
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   div []
-    [ button [ onClick Decrement ] [ text "-" ]
+    [ button [ onClick (Local Decrement) ] [ text "-" ]
     , div [ countStyle ] [ text (toString model) ]
-    , button [ onClick Increment ] [ text "+" ]
+    , button [ onClick (Local Increment) ] [ text "+" ]
+    ]
+
+viewWithRemoveButton : Model -> Html Msg
+viewWithRemoveButton model =
+  div []
+    [ button [ onClick (Local Decrement) ] [ text "-" ]
+    , span [ countStyle ] [ text (toString model) ]
+    , button [ onClick (Local Increment) ] [ text "+" ]
+    , button [ onClick Remove ] [ text "X" ]
     ]
 
 
@@ -48,14 +60,5 @@ countStyle =
     , ("text-align", "center")
     ]
 
-viewWithRemoveButton : (Msg -> pMsg) -> pMsg -> Model -> Html pMsg
-viewWithRemoveButton toParent removeMsg model =
-  div []
-    [ H.map toParent <| button [ onClick Decrement ] [ text "-" ]
-    , div [ countStyle ] [ text (toString model) ]
-    , H.map toParent <| button [ onClick Increment ] [ text "+" ]
-    , div [ countStyle ] []
-    , button [ onClick removeMsg ] [ text "X" ]
-    ]
 
 

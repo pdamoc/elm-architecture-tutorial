@@ -3,6 +3,7 @@ module CounterList exposing (..)
 import Counter
 import Html exposing (..)
 import Html.Events exposing (..)
+import Html.App
 
 
 -- MODEL
@@ -45,13 +46,16 @@ update msg model =
       }
 
     Modify id counterMsg ->
-      let updateCounter (counterID, counterModel) =
-              if counterID == id then
-                  (counterID, Counter.update counterMsg counterModel)
-              else
-                (counterID, counterModel)
-      in
-          { model | counters = List.map updateCounter model.counters }
+      case counterMsg of
+        Counter.Remove -> update (Remove id) model
+        _ -> 
+          let updateCounter (counterID, counterModel) =
+                  if counterID == id then
+                      (counterID, Counter.update counterMsg counterModel)
+                  else
+                    (counterID, counterModel)
+          in
+              { model | counters = List.map updateCounter model.counters }
 
 
 -- VIEW
@@ -65,4 +69,4 @@ view model =
 
 viewCounter : (ID, Counter.Model) -> Html Msg
 viewCounter (id, model) =
-  Counter.viewWithRemoveButton (Modify id) (Remove id) model
+  Html.App.map (Modify id) (Counter.viewWithRemoveButton model)
